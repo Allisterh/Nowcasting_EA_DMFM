@@ -24,7 +24,7 @@ P.covid_end = [2021, 6, 1];
 
 
 P.DataFile = 'data\ES\Processed\Data_ES';
-P.Legend = 'data\Es\Original\Legend_ES';
+P.Legend = 'data\ES\Original\Legend_ES';
 
 
 % Best ex-post parameterisations

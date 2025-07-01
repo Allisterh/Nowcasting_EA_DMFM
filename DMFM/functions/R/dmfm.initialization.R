@@ -469,8 +469,9 @@ mar_model_selection_auto <- function(Y_std, W, k_hat, max_lag = 10, verbose = TR
       scale_x_continuous(breaks = 1:max_lag) +
       ggtitle("AIC vs Lag") +
       theme_minimal()
-    
-    print(p1 + p2)
+  
+     print(p1)
+   # print(p1 + p2)
   }
   
   return(list(

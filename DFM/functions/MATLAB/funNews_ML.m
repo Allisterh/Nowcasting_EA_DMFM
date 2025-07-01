@@ -57,7 +57,7 @@ ClassM = b(:,11);
 % covid with NaN
 DataMTrf = DataM;
 for i = 2:5
-    DataMTrf(:,TransfM(:,1) == i) = 12*(DataMTrf(:,TransfM(:,1) == i));
+    DataMTrf(:,TransfM(:,1) == i) = 100*(DataMTrf(:,TransfM(:,1) == i));
 end
 [DataMTrf, Covid_obsM] = CovidNaN(DataMTrf, DatesM, ClassM, covid_startV, covid_endV);
 
@@ -109,7 +109,7 @@ ClassQ = ClassQ(List);
 % covid with NaN
 DataQTrf = DataQ;
 for i = 2:5
-    DataQTrf(:,TransfQ(:,1) == i) = 4*(DataQTrf(:,TransfQ(:,1) == i));
+    DataQTrf(:,TransfQ(:,1) == i) = 100*(DataQTrf(:,TransfQ(:,1) == i));
 end
 [DataQTrf, Covid_obsQ] = CovidNaN(DataQTrf, DatesQ, ClassQ, covid_startV, covid_endV);
 

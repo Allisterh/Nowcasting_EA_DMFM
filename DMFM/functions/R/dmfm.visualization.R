@@ -146,26 +146,30 @@ GDP_communality <- function(country_codes) {
 # ==============================================================================
 # GDP COMMUNALITIES IN EA 
 # ==============================================================================
-
 plot_lagged_heatmap_grid <- function(lagged_corrs, focus_countries = c("DE", "FR", "IT", "ES")) {
   library(reshape2)
   library(ggplot2)
   library(dplyr)
-  library(cowplot)  # per legenda condivisa
+  library(cowplot)
   
-  # Unifica tutte le matrici in long format
+  # Estrae solo i lag da 1 a 12
   all_corrs <- bind_rows(lapply(names(lagged_corrs), function(lag_label) {
-    mat <- lagged_corrs[[lag_label]]
-    df <- melt(mat)
-    df$Lag <- as.integer(gsub("Lag_", "", lag_label))
-    return(df)
+    lag_num <- as.integer(gsub("Lag_", "", lag_label))
+    if (lag_num >= 1 && lag_num <= 12) {
+      mat <- lagged_corrs[[lag_label]]
+      df <- melt(mat)
+      df$Lag <- lag_num
+      return(df)
+    } else {
+      return(NULL)
+    }
   }))
   
   colnames(all_corrs) <- c("Country1", "Country2", "Correlation", "Lag")
   all_corrs$Country1 <- as.character(all_corrs$Country1)
   all_corrs$Country2 <- factor(as.character(all_corrs$Country2), levels = c("DE", "FR", "IT", "ES"))
   
-  # Funzione per creare plot senza legenda
+  # Heatmap per ogni paese
   make_plot <- function(ref_country) {
     df_plot <- all_corrs %>% filter(Country1 == ref_country)
     
@@ -173,51 +177,47 @@ plot_lagged_heatmap_grid <- function(lagged_corrs, focus_countries = c("DE", "FR
       geom_tile(color = "white") +
       scale_fill_gradient2(low = "blue", mid = "white", high = "red",
                            midpoint = 0, limits = c(-1, 1), name = "Corr") +
-      labs(title = paste(ref_country), x = "Lag", y = NULL) +
+      scale_x_continuous(breaks = c(3, 6, 9, 12)) +
+      labs(title = ref_country, x = "Lag", y = NULL) +
       theme_minimal(base_size = 13) +
       theme(
-        legend.position = "none",  # rimuove legenda
+        legend.position = "none",
         axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 10),
-        plot.title = element_text(hjust = 0.5)
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5)
       )
   }
   
-  # Crea i 4 plot
   plots <- lapply(focus_countries, make_plot)
   names(plots) <- focus_countries
   
-  # Prendi la legenda da uno dei plot
+  # Estrai legenda da un plot
   get_legend_plot <- function() {
     df_plot <- all_corrs %>% filter(Country1 == "DE")
     p <- ggplot(df_plot, aes(x = Lag, y = Country2, fill = Correlation)) +
       geom_tile(color = "white") +
       scale_fill_gradient2(low = "blue", mid = "white", high = "red",
                            midpoint = 0, limits = c(-1, 1), name = "Correlation") +
+      scale_x_continuous(breaks = c(3, 6, 9, 12)) +
       labs(x = "Lag", y = NULL) +
       theme_minimal(base_size = 10) +
-      theme(
-        legend.position = "bottom",
-        legend.title = element_text(size = 9),
-        legend.text = element_text(size = 8)
-      )
+      theme(legend.position = "bottom")
     cowplot::get_legend(p)
   }
   
   shared_legend <- get_legend_plot()
   
-  # Griglia dei plot senza legenda
+  # Griglia 2x2
   plot_grid_top <- cowplot::plot_grid(
     plots$DE, plots$FR, plots$IT, plots$ES,
     ncol = 2, align = "hv"
   )
   
-  # Combinazione finale con legenda
   final_plot <- cowplot::plot_grid(
     plot_grid_top,
     shared_legend,
     ncol = 1,
-    rel_heights = c(1, 0.08)  # altezza piccola per la legenda
+    rel_heights = c(1, 0.08)
   )
   
   dir.create("Figures/LaggedByCountry", showWarnings = FALSE)
@@ -225,15 +225,8 @@ plot_lagged_heatmap_grid <- function(lagged_corrs, focus_countries = c("DE", "FR
          final_plot, width = 14, height = 10, bg = "white")
   
   print(final_plot)
-  
-  plot_with_title <- cowplot::plot_grid(
-    ggdraw() + draw_label("Lagged GDP Correlation Across Euro Area Countries", size = 16, hjust = 0.5),
-    final_plot,
-    ncol = 1,
-    rel_heights = c(0.1, 1)
-  )
-  print(plot_with_title)
 }
+
 
 GDP_lagged_correlation <- function(wide_gdp, max_lag = 12) {
   library(reshape2)
@@ -351,64 +344,39 @@ plot_euro_area_gdp <- function(file_path = "Data/GDP_millionsEA.xlsx",
   
   # 5. Plot
   gdp_plot <- ggplot() +
-    # Sfondo acqua
     theme_void() +
     theme(
-      panel.background = element_rect(fill = "aliceblue", color = NA),
+      plot.title = element_text(size = 18, face = "bold", hjust = 0.5,
+                                family = "serif", margin = margin(b = 10)),
       plot.background = element_rect(fill = "white", color = NA),
+      panel.background = element_rect(fill = "aliceblue", color = NA),
       panel.border = element_rect(fill = NA, color = "black", linewidth = 0.8),
-      legend.position = "right",
-      plot.title = element_text(size = 18, face = "bold", hjust = 0.5, family = "serif"),
-      plot.caption = element_text(size = 9, hjust = 1, family = "serif")
+      legend.position = "none",
+      plot.caption = element_text(size = 9, hjust = 1, family = "serif"),
+      plot.margin = margin(t = 15, r = 10, b = 10, l = 10)
     ) +
     
-    # Tutti i paesi in grigio chiaro
+    # Mappa
     geom_sf(data = europe, fill = "grey95", color = "black", size = 0.1) +
-    
-    # Paesi non EA grigio medio
     geom_sf(data = europe_gdp %>% filter(!EA_Member), fill = "grey85", color = "black", size = 0.1) +
-    
-    # Paesi EA con sfumatura blu
     geom_sf(data = europe_gdp %>% filter(EA_Member),
             aes(fill = FillColor), color = "black", size = 0.2) +
-    
-    # Evidenziazione rossa dei paesi speciali
     geom_sf(data = europe_gdp %>% filter(SpecialCountry),
             fill = NA, color = "red", size = 0.9) +
-    
-    # Etichette
     geom_sf_text(data = europe_gdp %>% filter(SpecialCountry & EA_Member),
                  aes(label = paste0(round(GDP_Share_EA, 1), "%")),
-                 size = 3.5, color = "black", fontface = "bold", family = "serif") +
+                 size = 5.2, color = "black", fontface = "bold", family = "serif") +
     
-    # Colori scala blu
+    # Colori (senza legenda)
     scale_fill_gradientn(
-      colours = c("white", "#cce5f6", "#99ccee", "#66aadf", "#3388cc", "#005f99"),
-      name = paste0("Share of EA GDP (%) – ", quarter),
-      limits = c(0, max(europe_gdp$GDP_Share_EA, na.rm = TRUE)),
-      guide = guide_colorbar(
-        direction = "horizontal",
-        title.position = "top",
-        title.hjust = 0.5,
-        barwidth = unit(6, "cm"),
-        barheight = unit(0.4, "cm")
-      )
+      colours = c("white", "#d4e8f7", "#a9d0f5", "#77b8eb", "#449fe1", "#1177cc"),
+      limits = c(0, 30),
+      na.value = "grey80",
+      guide = "none"
     ) +
-    theme(
-      panel.background = element_rect(fill = "aliceblue", color = NA),
-      plot.background = element_rect(fill = "white", color = NA),
-      panel.border = element_rect(fill = NA, color = "black", linewidth = 0.8),
-      legend.position = "bottom",
-      legend.title = element_text(size = 10, face = "bold", family = "serif"),
-      legend.text = element_text(size = 9, family = "serif"),
-      plot.title = element_text(size = 18, face = "bold", hjust = 0.5, family = "serif"),
-      plot.caption = element_text(size = 9, hjust = 1, family = "serif")
-    ) + 
     
     coord_sf(xlim = c(-25, 45), ylim = c(33, 72), expand = FALSE) +
-    labs(
-      title = "Euro Area GDP Composition"
-    )
+    labs(title = "Euro Area GDP Composition")
   
   print(gdp_plot)
   
@@ -438,7 +406,7 @@ plot_euro_area_gdp <- function(file_path = "Data/GDP_millionsEA.xlsx",
 # FACTORS VISUALIZATION
 # ==============================================================================
 
-plot_factors_tensor <- function(Factors, title = "Euro Area Recession Factor", free_y = TRUE, smooth = FALSE,
+plot_factors_tensor <- function(Factors, title = "Euro Area Business Cycle Factor ", free_y = TRUE, smooth = FALSE,
                                 start_date = as.Date("2000-01-01"), freq = "month") {
   T <- dim(Factors)[1]
   k1 <- dim(Factors)[2]

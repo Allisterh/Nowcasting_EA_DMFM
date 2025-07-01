@@ -273,3 +273,77 @@ colormap(customMap);
 cb = colorbar('Position', [0.92 0.10 0.015 0.82]);
 cb.Label.String = 'News Impact';
 cb.FontSize = 10;
+
+%% Top 5 impactful variables per paese
+
+fileList = {'newsDE_11.mat', 'newsFR_11.mat', 'newsIT_11.mat', 'newsES_11.mat'};
+countryLabels = {'Germany', 'France', 'Italy', 'Spain'};
+
+figure('Name', 'Top 5 News Impact', 'Units', 'normalized', 'Position', [0.1, 0.1, 0.8, 0.78]);
+sgtitle('Top 5 Variables with Highest News Impact', 'FontSize', 19, 'FontWeight', 'bold');
+
+subplotPositions = {
+    [0.08 0.56 0.36 0.33],  % Germany
+    [0.53 0.56 0.36 0.33],  % France
+    [0.08 0.14 0.36 0.33],  % Italy
+    [0.53 0.14 0.36 0.33]   % Spain
+};
+
+% Colormap blue-white-red
+n = 256;
+half = floor(n/2);
+customMap = [linspace(0,1,half)', linspace(0,1,half)', ones(half,1);
+             ones(half,1), linspace(1,0,half)', linspace(1,0,half)'];
+
+% Calcolo scala globale
+allVals = [];
+for i = 1:4
+    data = load(fileList{i});
+    allVals = [allVals; data.singlenews(:)];
+end
+absMax = max(abs(allVals));
+
+for i = 1:4
+    data = load(fileList{i});
+    singlenews = data.singlenews;
+    DateQQ = data.DateQQ;
+    Series = data.Series;
+
+    if ~isdatetime(DateQQ)
+        DateQQ = datetime(DateQQ, 'ConvertFrom', 'datenum');
+    end
+
+    % Rimuovi righe nulle o completamente NaN
+    validRows = any(abs(singlenews) > 0, 2) & any(~isnan(singlenews), 2);
+    singlenews_clean = singlenews(validRows, :);
+    Series_clean = Series(validRows);
+
+    % Calcola media dell’impatto assoluto per variabile
+    meanImpact = mean(abs(singlenews_clean), 2, 'omitnan');
+
+    % Seleziona top 5 variabili
+    [~, topIdxRaw] = maxk(meanImpact, 5);
+    singlenews_top = singlenews_clean(topIdxRaw, :);
+    Series_top = Series_clean(topIdxRaw);
+    cleanedSeries = regexprep(Series_top, '_[A-Z]{2}$', '');
+
+    % Plot
+    axes('Position', subplotPositions{i});
+    imagesc(DateQQ, 1:5, singlenews_top', [-absMax, absMax]);
+
+    set(gca, 'YTick', 1:5, ...
+             'YTickLabel', cleanedSeries, ...
+             'FontSize', 7);
+    xtickformat('MMM yyyy');
+    xticks(DateQQ(1:3:end));
+    xlim([min(DateQQ), max(DateQQ)]);
+
+    title(countryLabels{i});
+    xlabel('Date');
+    ylabel('Variables');
+end
+
+colormap(customMap);
+cb = colorbar('Position', [0.92 0.10 0.015 0.82]);
+cb.Label.String = 'News Impact';
+cb.FontSize = 10;

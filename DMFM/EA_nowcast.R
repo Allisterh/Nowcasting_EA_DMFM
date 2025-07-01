@@ -34,7 +34,7 @@
 # ==============================================================================
 # SET WORKING DIRECTORY
 # ==============================================================================
-path <- "C:/Users/david/Desktop/University/Master's Thesis/Nowcasting_EA_DMFM/DMFM"
+path <- "C:/Users/david/Desktop/Thesis/DMFM"
 setwd(path)
 
 
@@ -162,7 +162,7 @@ nan_percent_Y(Y_std)
 ################################# !is.na GDP ###################################
 
 
-ea_index <- which(dimnames(tensor$Y)[[2]] == "IT")
+ea_index <- which(dimnames(tensor$Y)[[2]] == "DE")
 gdp_idx <- which(dimnames(tensor$Y)[[3]] == "GDP")
 
 # Estrai la serie del GDP (standardizzata)
@@ -252,7 +252,7 @@ roll_nowcast <- rolling_nowcast_dmfm_by_release(
 
 save(
   res, tensor, k_hat, W, inputs, std, out, roll_nowcast, 
-  file = "results/DMFM/dmfm_rollnowcastLS_11_204_50MedvarCovidpluse-03.RData"
+  file = "results/DMFM/new_dmfm_rollnowcastLS_11_204_40MedvarCovidpluse-03.RData"
 )
 
 # (Optional) Load previously saved results

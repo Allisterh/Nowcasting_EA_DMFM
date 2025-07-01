@@ -63,8 +63,8 @@ source("Functions/R/dmfm.visualization.R")   # Plotting tools
 countries    <- c("DE", "FR", "IT", "ES")
 month_labels <- paste0("M", 1:3)
 n_months     <- length(month_labels)
-month_index  <- 1  # <== USER SELECTION: 1 = M1, 2 = M2, 3 = M3
-country_code <- "FR"
+month_index  <- 2  # <== USER SELECTION: 1 = M1, 2 = M2, 3 = M3
+country_code <- "ES"
 
 
 P <- list(
@@ -78,15 +78,13 @@ P <- list(
 )
 
 
-# dmfm_file <- "Results/dmfm_rollnowcastLS_11_204_40var.RData"
-# dmfm_file <- "Results/dmfm_rollnowcastLS_12_204_12varCovidpluse-04.RData"
 dmfm_file <- "results/DMFM/dmfm_rollnowcastLS_11_204_40varCovidpluse-03.RData"
 
 
 # dfm_file  <- "Results/DFM/fcst_DE_11.mat"
 # dfm_file  <- "Results/DFM/fcst_FR_11.mat"
-dfm_file  <- "results/DFM/fcst_IT_11.mat"
-# dfm_file  <- "Results/DFM/fcst_ES_11.mat"
+# dfm_file  <- "results/DFM/fcst_IT_11.mat"
+ dfm_file  <- "Results/DFM/fcst_ES_11.mat"
 
 
 # ==============================================================================
@@ -284,7 +282,7 @@ g_rmsfe_dmfm <- ggplot(df_rmsfe_dmfm, aes(x = Period, y = RMSFE, fill = Period))
   scale_fill_manual(values = c("Pre-COVID" = "#1f77b4", "Post-COVID" = "#ff7f0e")) +
   scale_color_manual(values = c("M1" = "#1f77b4", "M2" = "#2ca02c", "M3" = "#d62728")) +
   labs(
-    title = "DMFM Error Distribution",
+    title = paste0("DMFM Error Distribution - ", country_code),
     subtitle = "Models M1, M2, M3 across Pre- and Post-COVID",
     x = "Period", y = "RMSFE"
   ) +
@@ -460,8 +458,8 @@ g_rmsfe_dfm <- ggplot(df_rmsfe_dfm, aes(x = Period, y = RMSFE, fill = Period)) +
   scale_fill_manual(values = c("Pre-COVID" = "#1f77b4", "Post-COVID" = "#ff7f0e")) +
   scale_color_manual(values = c("M1" = "#1f77b4", "M2" = "#2ca02c", "M3" = "#d62728")) +
   labs(
-    title = "DFM Error Distribution",
-    subtitle = "Models M1, M2, M3 — Pre/Post COVID",
+    title = paste0("DFM Error Distribution - ", country_code),
+    subtitle = "Models M1, M2, M3 across Pre/Post COVID period",
     x = "Period", y = "RMSFE"
   ) +
   theme_minimal(base_size = 13) +
@@ -555,6 +553,41 @@ g_dmfm_dfm_errors       # Boxplot confronto errori
 
 
 
+# Aggiungiamo la colonna "Formulation"
+df_rmsfe_dfm$Formulation <- "DFM"
+df_rmsfe_dmfm$Formulation <- "DMFM"
+
+# Uniamo i due dataset
+df_rmsfe_all <- rbind(df_rmsfe_dfm, df_rmsfe_dmfm)
+
+# Plot unico con facet per Formulation
+g_rmsfe_all <- ggplot(df_rmsfe_all, aes(x = Period, y = RMSFE, fill = Period)) +
+  geom_boxplot(alpha = 0.85, outlier.shape = 16, outlier.size = 1.5) +
+  geom_jitter(width = 0.1, size = 2.5, aes(color = Model)) +
+  facet_grid(. ~ Formulation) +
+  scale_fill_manual(values = c("Pre-COVID" = "#1f77b4", "Post-COVID" = "#ff7f0e")) +
+  scale_color_manual(values = c("M1" = "#1f77b4", "M2" = "#2ca02c", "M3" = "#d62728")) +
+  labs(
+    title = paste0("Distribution of Error Comparison - ", country_code),
+    x = "Period", y = "RMSFE", color = "Model"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20),  # Titolo più grande
+    strip.text = element_text(size = 16),              # DFM/DMFM sopra le facette
+    legend.position = "bottom"
+  )
+
+
+# Visualizza il grafico
+print(g_rmsfe_all)
+
+# Pre-COVID
+wilcox.test(RMSFE ~ Formulation, data = subset(df_rmsfe_all, Period == "Pre-COVID"))
+
+# Post-COVID
+wilcox.test(RMSFE ~ Formulation, data = subset(df_rmsfe_all, Period == "Post-COVID"))
+
 # ==============================================================================
 # 24. Serie storica: True GDP vs Nowcast M1-M3 (DMFM vs DFM)
 # ==============================================================================
@@ -610,7 +643,7 @@ ggplot(df_all, aes(x = Quarter, y = Value, color = Month, group = Month)) +
     "M3"   = "#d62728"
   )) +
   labs(
-    title = "True GDP vs Nowcast Updates (M1-M2–M3)",
+    title = paste0("True GDP vs Nowcast Updates (M1-M2-M3) - ", country_code),
     subtitle = " Comparison by Month of Forecast",
     x = "Quarter", y = "GDP Growth",
     color = "Series"
@@ -677,8 +710,8 @@ ggplot() +
   ) +
   
   labs(
-    title = "True GDP vs Nowcast Updates (M1–M2–M3)",
-    subtitle = "Comparison by Month of Forecast",
+    title = paste0("True GDP vs Nowcast Updates - ", country_code),
+    subtitle = "Comparison by Month of Forecast (M1–M2–M3)",
     x = "Quarter", y = "GDP Growth",
     color = "Series"
   ) +
@@ -746,7 +779,7 @@ ggplot() +
 
 # Supponiamo che covid_start_q e covid_end_q siano gli stessi valori contenuti in TimeIndex
 covid_start_q <- 32  # esempio
-covid_end_q   <- 53  # esempio
+covid_end_q   <- 47  # esempio
 
 ggplot() +
   annotate("rect", xmin = covid_start_q, xmax = covid_end_q,
@@ -1013,7 +1046,6 @@ plot_factor_loadings_heatmap(R, C, var_names, country_names, factor_idx = 1)
 for (k in 1:ncol(R)) {
   plot_factor_loadings_heatmap(R, C, var_names, country_names, factor_idx = k)
 }
-
 plot_factor_loadings_heatmap <- function(R, C, var_names, country_names, factor_idx = 1) {
   library(ggplot2)
   library(dplyr)
@@ -1026,23 +1058,26 @@ plot_factor_loadings_heatmap <- function(R, C, var_names, country_names, factor_
   # Outer product: variabili (colonne) × paesi (righe)
   L_mat <- outer(r_f, c_f)  # dimensione: V x N
   
-  # Imposta nomi se le dimensioni combaciano
+  # Imposta nomi se disponibili
   rownames(L_mat) <- if (!is.null(var_names) && length(var_names) == nrow(L_mat)) var_names else paste0("Var", seq_len(nrow(L_mat)))
   colnames(L_mat) <- if (!is.null(country_names) && length(country_names) == ncol(L_mat)) country_names else paste0("Ctry", seq_len(ncol(L_mat)))
   
-  # Converti in formato long per ggplot
-  L_df <- as.data.frame(t(L_mat)) %>%  # trasponi per avere paesi sulle righe
+  # Converti in formato long
+  L_df <- as.data.frame(t(L_mat)) %>%  # trasponi: righe = paesi
     mutate(Country = rownames(.)) %>%
     pivot_longer(-Country, names_to = "Variable", values_to = "Loading")
   
-  # Heatmap finale: paesi (Y), variabili (X)
+  # Heatmap con legenda sotto
   p <- ggplot(L_df, aes(x = Variable, y = Country, fill = Loading)) +
     geom_tile(color = "white") +
     scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
-    labs(title = paste("EA Recession Factor: Loadings by Country and Variable"),
-         x = NULL, y = NULL) +
-    theme_minimal(base_size = 12) +
+    labs(title = paste("Loadings by Country and Variable"),
+         x = NULL, y = NULL, fill = "Loading") +
+    theme_minimal(base_size = 17) +
     theme(
+      legend.position = "none",
+      legend.title = element_text(size = 8),
+      legend.text = element_text(size = 10),
       axis.text.x = element_text(angle = 45, hjust = 1),
       axis.text.y = element_text(size = 10),
       plot.title = element_text(hjust = 0.5)
@@ -1050,6 +1085,7 @@ plot_factor_loadings_heatmap <- function(R, C, var_names, country_names, factor_
   
   print(p)
 }
+
 R <- inputs$R
 C <- inputs$C
 var_names <- colnames(tensor$Y)           # nomi delle variabili
@@ -1104,10 +1140,14 @@ plot_country_loadings <- function(C, country_names, factor_idx) {
     coord_flip() +
     scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
     labs(title = "Variable Loadings for the Column Factor",
-         x = NULL, y = "Loading") +
-    theme_minimal(base_size = 13) +
-    theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+         x = NULL, y = NULL) +
+    theme_minimal(base_size = 15) +
+    theme(
+      plot.title = element_text(size = 20, hjust = 0.5),
+      legend.position = "none"
+    )
 }
+
 
 # ----------------------
 # === ESECUZIONE ===
@@ -1315,14 +1355,34 @@ ggplot(df_long_clean, aes(x = Date, y = Value, color = Series)) +
 
 # Ordine desiderato dei paesi
 df_long_clean$Country <- factor(df_long_clean$Country, levels = c("DE", "FR","IT","ES"))
+# Definizione periodi ombreggiati
+shading_periods <- data.frame(
+  shading_periods <- data.frame(
+    start = as.Date(c("2008-01-01", "2012-01-01", "2020-01-01")),
+    end   = as.Date(c("2009-02-28", "2014-12-31", "2022-12-31"))
+  )
+  
 
-# Plot finale
+)
+
+# Plot
 ggplot(df_long_clean, aes(x = Date, y = Value, color = Series)) +
-  geom_line(size = 1) +
+  # Rettangoli grigi
+  geom_rect(data = shading_periods,
+            inherit.aes = FALSE,
+            aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
+            fill = "grey80", alpha = 0.5) +
+  
+  # Linee smoothed (arancione) più spessa
+  geom_line(data = subset(df_long_clean, Series == "GDP_Smoothed"), size = 1) +
+  
+  # Linee true (blu) più sottile
+  geom_line(data = subset(df_long_clean, Series == "GDP_True"), size = 0.5) +
+  
   facet_wrap(~ Country, ncol = 2, scales = "free_y") +
   scale_color_manual(values = c("GDP_True" = "#1f77b4", "GDP_Smoothed" = "#ff7f0e")) +
   labs(
-    title = "GDP: True vs Smoothed ",
+    title = "GDP: True vs Smoothed",
     x = "Date", y = "GDP Growth (%)", color = NULL
   ) +
   theme_light(base_size = 14) +
@@ -1335,7 +1395,9 @@ ggplot(df_long_clean, aes(x = Date, y = Value, color = Series)) +
     panel.grid.minor = element_blank(),
     panel.spacing = unit(1.5, "lines"),
     plot.margin = margin(10, 10, 10, 10)
-  )
+  ) +
+  coord_cartesian(ylim = c(-4.2, 3))
+
 
 # "GDP_True" = "black", "GDP_Smoothed" = "red"
 # ==============================================================================
